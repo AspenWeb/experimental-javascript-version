@@ -9,29 +9,38 @@ server = http.createServer(function(req, res)
     var fs_path = req.url.slice(1, req.url.length);
     console.log("serving " + fs_path);
 
-    try {
-        var raw = fs.readFileSync(fs_path, 'UTF-8');
-        var parts = raw.split("^L");
-
-        if (!(parts[0] in cache))
+    fs.readFile(fs_path, 'UTF-8', function (err, raw)
+    {
+        if (err)
         {
-            cache[parts[0]] = null;
-            eval(parts[0]);
+            res.statusCode = 404;
+            res.write("Not found, program!");
         }
-
-        (function ()
+        else
         {
-            eval(parts[1]);
-            var out = peace.render(parts[2], global);
-            res.write(out);
-        })();
+            var parts = raw.split("^L");
 
-    } catch (err) {
-        console.log(err);
-        res.statusCode = 404;
-        res.write("Not found, program!");
-    }
-    res.end();
+            // Run page 1 if we haven't yet.
+            if (!(parts[0] in cache))
+            {
+                cache[parts[0]] = null;
+                eval(parts[0]);
+            }
+
+            (function ()
+            {
+                // Run page 2.
+                eval(parts[1]);
+
+                // Render template page.
+                var out = peace.render(parts[2], global);
+
+                res.write(out);
+            })();
+        }
+        res.end();
+    });
 })
 
+console.log("Greetings, program!");
 server.listen(8080);
