@@ -2,18 +2,16 @@ http = require('http');
 fs = require('fs');
 peace = require('mustache');
 
-
 cache = {};
-
 
 server = http.createServer(function(req, res)
 {
-    fs_path = req.url.slice(1, req.url.length);
-    console.log(fs_path);
+    var fs_path = req.url.slice(1, req.url.length);
+    console.log("serving " + fs_path);
 
     try {
-        raw = fs.readFileSync(fs_path, 'UTF-8');
-        parts = raw.split("^L");
+        var raw = fs.readFileSync(fs_path, 'UTF-8');
+        var parts = raw.split("^L");
 
         if (!(parts[0] in cache))
         {
@@ -24,8 +22,7 @@ server = http.createServer(function(req, res)
         (function ()
         {
             eval(parts[1]);
-            out = peace.render(parts[2], global);
-            console.log(out);
+            var out = peace.render(parts[2], global);
             res.write(out);
         })();
 
@@ -36,4 +33,5 @@ server = http.createServer(function(req, res)
     }
     res.end();
 })
+
 server.listen(8080);
