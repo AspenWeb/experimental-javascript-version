@@ -27,7 +27,7 @@ function fail(res, code) {
     res.end();
 }
 
-function checkEncoding (buffer) {
+function checkEncoding(buffer) {
     var contentStartUTF8 = buffer.toString('utf8', 0, 24),
         encoding = 'utf8',
         i,
@@ -57,43 +57,41 @@ server = http.createServer(function(req, res) {
 
     console.log('stating: ' + fs_path);
     fs.readFile(fs_path, function(err, raw) {
-            console.log('serving: ' + fs_path);
-            if (err) return fail(res, 404);
+        console.log('serving: ' + fs_path);
+        if (err) return fail(res, 404);
 
-            //Check encoding of the file
-            if (checkEncoding(raw) == 'utf8') {
-                var pages = raw.toString("utf8").split("^L");
+        //Check encoding of the file
+        if (checkEncoding(raw) == 'utf8') {
+            var pages = raw.toString("utf8").split("^L");
 
-                while (pages.length < 3) {
-                    pages.unshift('');
-                }
-
-                // Run page 0 if we haven't yet.
-                if (!(pages[0] in cache)) {
-                    cache[pages[0]] = null;
-                    eval(pages[0]);
-                }
-
-                (function() {
-                    // Run page 1.
-                    eval(pages[1]);
-
-                    // Render template page.
-                    var out = pages[2];
-                    if (content_type.indexOf('text/') === 0)
-                        var out = mustache.render(out, global);
-
-                    res.setHeader('Content-Type', content_type);
-                    res.write(out);
-                    res.end();
-                })();
-            } else {
-                //It is not utf8 so send the buffer as binary data
-                res.end(raw);
+            while (pages.length < 3) {
+                pages.unshift('');
             }
-        });
-    });
 
+            // Run page 0 if we haven't yet.
+            if (!(pages[0] in cache)) {
+                cache[pages[0]] = null;
+                eval(pages[0]);
+            }
+
+            (function() {
+                // Run page 1.
+                eval(pages[1]);
+
+                // Render template page.
+                var out = pages[2];
+                if (content_type.indexOf('text/') === 0)
+                    var out = mustache.render(out, global);
+
+                res.setHeader('Content-Type', content_type);
+                res.write(out);
+                res.end();
+            })();
+        } else {
+            //It is not utf8 so send the buffer as binary data
+            res.end(raw);
+        }
+    });
 }).listen(8080);
 
 console.log("Greetings, program! Welcome to port 8080.");
