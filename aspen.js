@@ -19,7 +19,7 @@ server = http.createServer(function(req, res)
     var fs_path = url.parse(req.url).pathname.slice(1, req.url.length);
 
     fs_path = path.resolve(fs_path);
-    console.log('serving' + fs_path);
+    console.log('stating' + fs_path);
     fs.stat(fs_path, function(err, stats)
     {
         if (err) return fail(res, 404)
@@ -27,6 +27,7 @@ server = http.createServer(function(req, res)
         if (stats.isDirectory())
             fs_path += '/index.html';
 
+        console.log('serving' + fs_path);
         fs.readFile(fs_path, 'UTF-8', function (err, raw)
         {
             if (err) return fail(res, 404)
@@ -58,5 +59,5 @@ server = http.createServer(function(req, res)
 
 })
 
-console.log("Greetings, program!");
+console.log("Greetings, program! Welcome to port 8080.");
 server.listen(8080);
