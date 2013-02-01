@@ -1,5 +1,5 @@
 {
-    "name": "aspen.js",
+    "name": "aspen",
     "version": "0.0.1",
     "author": "Chad Whitacre <chad@zetaweb.com>",
     "description": "A NodeJS web framework that makes the most of the filesystem.",
