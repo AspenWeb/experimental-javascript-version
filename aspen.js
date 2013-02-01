@@ -45,7 +45,6 @@ function checkEncoding (buffer) {
     return encoding;
 }
 
-
 server = http.createServer(function(req, res) {
     var fs_path = url.parse(req.url).pathname.slice(1, req.url.length);
     fs_path = path.resolve(config.dir + path.sep + fs_path);
@@ -56,7 +55,15 @@ server = http.createServer(function(req, res) {
     }
 
     console.log('stating: ' + fs_path);
-    fs.readFile(fs_path, function(err, raw) {
+    fs.stat(fs_path, function(err, stats) {
+        if (err) return fail(res, 404);
+
+        if (stats.isDirectory())
+            fs_path += '/' + config.index;
+
+        var content_type = mime.lookup(fs_path);
+
+        fs.readFile(fs_path, function(err, raw) {
             console.log('serving: ' + fs_path);
             if (err) return fail(res, 404);
 
