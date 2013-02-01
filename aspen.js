@@ -1,6 +1,6 @@
 http = require('http');
 fs = require('fs');
-peace = require('mustache');
+mustache = require('mustache');
 
 cache = {};
 
@@ -33,7 +33,7 @@ server = http.createServer(function(req, res)
                 eval(parts[1]);
 
                 // Render template page.
-                var out = peace.render(parts[2], global);
+                var out = mustache.render(parts[2], global);
 
                 res.write(out);
             })();
