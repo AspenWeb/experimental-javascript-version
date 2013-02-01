@@ -1,0 +1,19 @@
+{
+    "name": "aspen-js",
+    "version": "0.0.1",
+    "author": "Chad Whitacre <chad@zetaweb.com>",
+    "description": "A NodeJS web framework that makes the most of the filesystem.",
+    "contributors": [
+    ],
+    "scripts": {
+        "start": "node aspen"
+    },
+    "repository": {
+        "type": "git",
+        "url": "https://github.com/zetaweb/aspen.js.git"
+    },
+    "dependencies": {
+        "mustache": "*"
+    },
+    "license": "MIT"
+}
