@@ -1,45 +1,61 @@
 http = require('http');
 fs = require('fs');
 mustache = require('mustache');
+url = require('url');
+path = require('path');
 
 cache = {};
+codes = {"404": "Not found, program!"};
+
+function fail(res, code)
+{
+    res.statusCode = code;
+    res.write(codes[code.toString()]);
+    res.end()
+}
 
 server = http.createServer(function(req, res)
 {
-    var fs_path = req.url.slice(1, req.url.length);
-    console.log("serving " + fs_path);
+    var fs_path = url.parse(req.url).pathname.slice(1, req.url.length);
 
-    fs.readFile(fs_path, 'UTF-8', function (err, raw)
+    fs_path = path.resolve(fs_path);
+    console.log('serving' + fs_path);
+    fs.stat(fs_path, function(err, stats)
     {
-        if (err)
-        {
-            res.statusCode = 404;
-            res.write("Not found, program!");
-        }
-        else
-        {
-            var parts = raw.split("^L");
+        if (err) return fail(res, 404)
 
-            // Run page 1 if we haven't yet.
-            if (!(parts[0] in cache))
+        if (stats.isDirectory())
+            fs_path += '/index.html';
+
+        fs.readFile(fs_path, 'UTF-8', function (err, raw)
+        {
+            if (err) return fail(res, 404)
+
+            var pages = raw.split("^L");
+            while (pages.length < 3)
+                pages.unshift('');
+
+            // Run page 0 if we haven't yet.
+            if (!(pages[0] in cache))
             {
-                cache[parts[0]] = null;
-                eval(parts[0]);
+                cache[pages[0]] = null;
+                eval(pages[0]);
             }
 
             (function ()
             {
-                // Run page 2.
-                eval(parts[1]);
+                // Run page 1.
+                eval(pages[1]);
 
                 // Render template page.
-                var out = mustache.render(parts[2], global);
+                var out = mustache.render(pages[2], global);
 
                 res.write(out);
+                res.end();
             })();
-        }
-        res.end();
+        });
     });
+
 })
 
 console.log("Greetings, program!");
