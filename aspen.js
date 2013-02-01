@@ -1,11 +1,18 @@
-http = require('http');
 fs = require('fs');
-mustache = require('mustache');
-url = require('url');
+http = require('http');
 path = require('path');
+url = require('url');
+
+mime = require('mime');
+mustache = require('mustache');
+
 
 cache = {};
-codes = {"404": "Not found, program!"};
+codes = { "400": "Bad request, program!"
+        , "404": "Not found, program!"
+         };
+cwd = process.cwd();
+
 
 function fail(res, code)
 {
@@ -14,11 +21,16 @@ function fail(res, code)
     res.end()
 }
 
+
 server = http.createServer(function(req, res)
 {
     var fs_path = url.parse(req.url).pathname.slice(1, req.url.length);
-
     fs_path = path.resolve(fs_path);
+
+    if (fs_path.indexOf(cwd) !== 0)
+        // They gave us ../../..
+        return fail(res, 400);
+
     console.log('stating' + fs_path);
     fs.stat(fs_path, function(err, stats)
     {
@@ -27,9 +39,12 @@ server = http.createServer(function(req, res)
         if (stats.isDirectory())
             fs_path += '/index.html';
 
-        console.log('serving' + fs_path);
+        var content_type = mime.lookup(fs_path);
+
         fs.readFile(fs_path, 'UTF-8', function (err, raw)
         {
+            console.log('serving' + fs_path);
+
             if (err) return fail(res, 404)
 
             var pages = raw.split("^L");
@@ -49,8 +64,11 @@ server = http.createServer(function(req, res)
                 eval(pages[1]);
 
                 // Render template page.
-                var out = mustache.render(pages[2], global);
+                var out = pages[2];
+                if (content_type.indexOf('text/') === 0)
+                    var out = mustache.render(out, global);
 
+                res.setHeader('Content-Type', content_type)
                 res.write(out);
                 res.end();
             })();
