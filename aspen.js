@@ -27,6 +27,24 @@ function fail(res, code) {
     res.end();
 }
 
+function checkEncoding (buffer) {
+    var contentStartUTF8 = buffer.toString('utf8', 0, 24),
+        encoding = 'utf8',
+        i,
+        charCode;
+
+    for (i = 0; i < contentStartUTF8.length; i += 1) {
+        charCode = contentStartUTF8.charCodeAt(i);
+        if (charCode == 65533 || charCode <= 8) {
+            console.log("Encoding CharCode: " + charCode);
+            encoding = 'binary';
+            break;
+        }
+    }
+
+    return encoding;
+}
+
 
 server = http.createServer(function(req, res) {
     var fs_path = url.parse(req.url).pathname.slice(1, req.url.length);
@@ -38,43 +56,41 @@ server = http.createServer(function(req, res) {
     }
 
     console.log('stating: ' + fs_path);
-    fs.stat(fs_path, function(err, stats) {
-        if (err) return fail(res, 404);
-
-        if (stats.isDirectory())
-            fs_path += '/' + config.index;
-
-        var content_type = mime.lookup(fs_path);
-
-        fs.readFile(fs_path, 'UTF-8', function(err, raw) {
+    fs.readFile(fs_path, function(err, raw) {
             console.log('serving: ' + fs_path);
             if (err) return fail(res, 404);
 
-            var pages = raw.split("^L");
+            //Check encoding of the file
+            if (checkEncoding(raw) == 'utf8') {
+                var pages = raw.toString("utf8").split("^L");
 
-            while (pages.length < 3) {
-                pages.unshift('');
+                while (pages.length < 3) {
+                    pages.unshift('');
+                }
+
+                // Run page 0 if we haven't yet.
+                if (!(pages[0] in cache)) {
+                    cache[pages[0]] = null;
+                    eval(pages[0]);
+                }
+
+                (function() {
+                    // Run page 1.
+                    eval(pages[1]);
+
+                    // Render template page.
+                    var out = pages[2];
+                    if (content_type.indexOf('text/') === 0)
+                        var out = mustache.render(out, global);
+
+                    res.setHeader('Content-Type', content_type);
+                    res.write(out);
+                    res.end();
+                })();
+            } else {
+                //It is not utf8 so send the buffer as binary data
+                res.end(raw);
             }
-
-            // Run page 0 if we haven't yet.
-            if (!(pages[0] in cache)) {
-                cache[pages[0]] = null;
-                eval(pages[0]);
-            }
-
-            (function() {
-                // Run page 1.
-                eval(pages[1]);
-
-                // Render template page.
-                var out = pages[2];
-                if (content_type.indexOf('text/') === 0)
-                    var out = mustache.render(out, global);
-
-                res.setHeader('Content-Type', content_type);
-                res.write(out);
-                res.end();
-            })();
         });
     });
 
