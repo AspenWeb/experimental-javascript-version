@@ -12,6 +12,12 @@ codes = {
     "400": "Bad request, program!",
     "404": "Not found, program!"
 };
+
+config = {
+    "dir": "www",
+    "index": "index.html"
+};
+
 cwd = process.cwd();
 
 
@@ -24,7 +30,7 @@ function fail(res, code) {
 
 server = http.createServer(function(req, res) {
     var fs_path = url.parse(req.url).pathname.slice(1, req.url.length);
-    fs_path = path.resolve('www' + path.sep + fs_path);
+    fs_path = path.resolve(config.dir + path.sep + fs_path);
 
     if (fs_path.indexOf(cwd) !== 0) {
         // They gave us ../../..
@@ -36,7 +42,7 @@ server = http.createServer(function(req, res) {
         if (err) return fail(res, 404);
 
         if (stats.isDirectory())
-            fs_path += '/index.html';
+            fs_path += '/' + config.index;
 
         var content_type = mime.lookup(fs_path);
 
