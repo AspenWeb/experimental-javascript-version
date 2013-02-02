@@ -1,0 +1,25 @@
+var url = require('url'),
+    fs  = require('fs');
+
+
+^L
+
+cwd = __dirname;
+var list = '';
+fs.readdirSync(cwd, function(err, files) {
+    for(var i = 0; i < files.length; i++) {
+        list = list + files[i];
+    }
+});
+console.log(list);
+
+^L
+<!DOCTYPE html>
+<html>
+    <head>
+        <title></title>
+    </head>
+    <body>
+        {{list}}
+    </body>
+</html>
