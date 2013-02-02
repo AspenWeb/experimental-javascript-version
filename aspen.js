@@ -26,6 +26,7 @@ config = {
 cwd = process.cwd();
 
 
+// @TODO convert to simplate based errors
 function fail(res, code) {
     res.statusCode = code;
     res.write(codes[code.toString()]);
@@ -51,10 +52,11 @@ function checkEncoding (buffer) {
 }
 
 function render_simplate(simplate, res) {
+    console.log('[RENDER] '+simplate);
     var content_type = mime.lookup(simplate);
 
     fs.readFile(simplate, function(err, raw) {
-        console.log('serving: ' + simplate);
+        console.log('[SERVIN] ' + simplate);
         if (err) return fail(res, 404);
 
         //Check encoding of the file
@@ -103,7 +105,7 @@ server = http.createServer(function(req, res) {
         return fail(res, 400);
     }
 
-    console.log('stating: ' + fs_path);
+    console.log('[REQUEST] ' + fs_path);
     fs.stat(fs_path, function(err, stats) {
         var simplate;
 
@@ -123,32 +125,9 @@ server = http.createServer(function(req, res) {
             });
         } else {
             // Not a directory, we want a file, easy peasey!
+            simplate = fs_path;
             render_simplate(simplate, res);
         }
-        /*
-
-        if (stats.isDirectory()) {
-            var tmp_simp;
-            console.log(new_path);
-
-            fs.existsSync(new_path, function(exists) {
-                if(exists === true) {
-                    tmp_simp = new_path;
-                    console.log('exists ' + tmp_simp);
-                } else {
-                    // Serve up autoindex simplate
-                    tmp_simp = fs_path + path.sep + config.simplates.defaults + path.sep + 'autoindex.html';
-                    console.log('autoindex ' + tmp_simp);
-                }
-                simplate = tmp_simp;
-            });
-            simplate = tmp_simp;
-            console.log('finished ' +simplate);
-        } else {
-            simplate = fs_path;
-        }
-        console.log('simplate: ' + simplate);
-        */
 
     });
 

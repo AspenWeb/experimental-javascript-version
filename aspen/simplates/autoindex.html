@@ -5,13 +5,11 @@ var url = require('url'),
 ^L
 
 cwd = __dirname;
-var list = '';
-fs.readdirSync(cwd, function(err, files) {
-    for(var i = 0; i < files.length; i++) {
-        list = list + files[i];
-    }
-});
-console.log(list);
+var files = fs.readdirSync(cwd);
+files = JSON.stringify(files);
+console.log(files);
+console.log(typeof files);
+derp = 'herp';
 
 ^L
 <!DOCTYPE html>
@@ -20,6 +18,7 @@ console.log(list);
         <title></title>
     </head>
     <body>
-        {{list}}
+        {{ files }}
+        {{ derp }}
     </body>
 </html>
