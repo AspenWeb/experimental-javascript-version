@@ -3,101 +3,27 @@ http = require('http');
 path = require('path');
 url = require('url');
 
-mime = require('mime');
-mustache = require('mustache');
-
+var aspen = require('./aspen/aspen.js');
 
 cache = {};
-codes = {
-    "400": "Bad request, program!",
-    "404": "Not found, program!"
-};
-
-config = {
-    "simplates": {
-        "defaults": "aspen"+path.sep+"simplates"
-    },
-    "dir": "www",
-    "index": "index.html",
-    "autoindex": true,
-    "port": 8080
-};
-
 cwd = process.cwd();
 
 
-// @TODO convert to simplate based errors
-function fail(res, code) {
+// @TODO send errors to simplate
+function fail(res, code, err) {
+    aspen.logger.error(err);
+
     res.statusCode = code;
-    res.write(codes[code.toString()]);
-    res.end();
+    aspen.render(aspen.config.aspen_root + path.sep + "www" + path.sep + 'error.html', {res:res});
 }
 
-function checkEncoding (buffer) {
-    var contentStartUTF8 = buffer.toString('utf8', 0, 24),
-        encoding = 'utf8',
-        i,
-        charCode;
 
-    for (i = 0; i < contentStartUTF8.length; i += 1) {
-        charCode = contentStartUTF8.charCodeAt(i);
-        if (charCode == 65533 || charCode <= 8) {
-            console.log("Encoding CharCode: " + charCode);
-            encoding = 'binary';
-            break;
-        }
-    }
 
-    return encoding;
-}
-
-function render_simplate(simplate, res) {
-    console.log('[RENDER] '+simplate);
-    var content_type = mime.lookup(simplate);
-
-    fs.readFile(simplate, function(err, raw) {
-        console.log('[SERVIN] ' + simplate);
-        if (err) return fail(res, 404);
-
-        //Check encoding of the file
-        if (checkEncoding(raw) == 'utf8') {
-            var pages = raw.toString("utf8").split("^L");
-
-            while (pages.length < 3) {
-                pages.unshift('');
-            }
-
-            // Run page 0 if we haven't yet.
-            if (!(pages[0] in cache)) {
-                cache[pages[0]] = null;
-                eval(pages[0]);
-            }
-
-            (function() {
-                // Run page 1.
-                eval(pages[1]);
-
-                // Render template page.
-                var out = pages[2];
-                if (content_type.indexOf('text/') === 0)
-                    var out = mustache.render(out, global);
-
-                res.setHeader('Content-Type', content_type);
-                res.write(out);
-                res.end();
-            })();
-        } else {
-            //It is not utf8 so send the buffer as binary data
-            res.end(raw);
-        }
-    });
-}
-
-server = http.createServer(function(req, res) {
+server = http.createServer(function (req, res) {
 
     var aspen_root = __dirname;
     var fs_path = url.parse(req.url).pathname.slice(1, req.url.length);
-    fs_path = path.resolve(config.dir + path.sep + fs_path);
+    fs_path = path.resolve(aspen.config.www_root + path.sep + fs_path);
 
 
     if (fs_path.indexOf(cwd) !== 0) {
@@ -105,32 +31,32 @@ server = http.createServer(function(req, res) {
         return fail(res, 400);
     }
 
-    console.log('[REQUEST] ' + fs_path);
-    fs.stat(fs_path, function(err, stats) {
+    fs.stat(fs_path, function (err, stats) {
         var simplate;
 
         if (err) return fail(res, 404);
 
-        if(stats.isDirectory()) {
-            var index_path = fs_path + path.sep + config.index;
-            fs.exists(index_path, function(exists) {
+        if (stats.isDirectory()) {
+            // @todo: add support for multiple indicies
+            var index_path = fs_path + path.sep + aspen.config.indices[0];
+
+            fs.exists(index_path, function (exists) {
                 simplate = index_path;
-                if(exists === false) {
-                    simplate = aspen_root + path.sep + config.simplates.defaults + path.sep + 'autoindex.html';
+                if (exists === false) {
+                    simplate = aspen.config.aspen_root + path.sep + "www" + path.sep + 'autoindex.html'
                 }
+
                 // Now that we have simplate, let's do something!
-
-                render_simplate(simplate, res);
-
+                aspen.render(simplate, {res:res});
             });
         } else {
             // Not a directory, we want a file, easy peasey!
             simplate = fs_path;
-            render_simplate(simplate, res);
+            aspen.render(simplate, {res:res});
         }
 
     });
 
-}).listen(config.port);
+}).listen(aspen.config.network_port, aspen.config.network_address);
 
-console.log("Greetings, program! Welcome to port "+config.port+".");
+aspen.logger.log("Greetings, program! Welcome to " + aspen.config.network_address + ":" + aspen.config.network_port + ".");

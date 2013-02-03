@@ -1,0 +1,17 @@
+{
+    "debug": true,
+
+    "charset": "UTF-8",
+    "indices": [
+        "index.html",
+        "README"
+    ],
+    "list_directories": true,
+    "logging_threshold": 1,
+    "media_type_default": "text/plain",
+    "network_address": "127.0.0.1",
+    "network_port": 8080,
+    "www_root": "www",
+    "aspen_root": "aspen",
+    "unavailable": false
+}
