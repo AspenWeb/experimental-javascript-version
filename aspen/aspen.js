@@ -5,6 +5,8 @@ var mime = require('mime'),
     utils = require('./utils.js'),
     logger = require('./logger.js');
 
+var vm = require('vm');
+
 var config = require('../.aspen/config.json');
 
 exports.config = config;
@@ -28,19 +30,24 @@ exports.render = function(simplate, context) {
                 pages.unshift('');
             }
 
-            // Run page 0 if we haven't yet.
+            var ctx = vm.createContext({console:console,require:require});
+            var top = vm.createScript(pages[0]);
+            // Run page 0 if we haven't yet.    
             if (!(pages[0] in cache)) {
                 cache[pages[0]] = null;
-                eval(pages[0]);
+                top.runInContext(ctx);
             }
 
             (function () {
                 // Run page 1.
-                eval(pages[1]);
+                //eval(pages[1]);
+                var middle = vm.createScript(pages[1]);
 
+                middle.runInContext(ctx);
+                
                 var out = pages[2];
                 if (content_type.indexOf('text/') === 0) {
-                    var out = mustache.render(out, global);
+                    var out = mustache.render(out, ctx);
                 }
 
                 res.setHeader('Content-Type', content_type);

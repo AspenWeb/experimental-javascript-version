@@ -12,11 +12,11 @@ exports.check_encoding = function(buffer) {
     for (i = 0; i < contentStartUTF8.length; i += 1) {
         charCode = contentStartUTF8.charCodeAt(i);
         if (charCode == 65533 || charCode <= 8) {
-            logger.debug("Encoding CharCode: " + charCode);
+            logger.debug("Encoding: CharCode " + charCode);
             encoding = 'binary';
             break;
         }
     }
 
     return encoding;
-}
+};

@@ -6,7 +6,7 @@
     "contributors": [
     ],
     "scripts": {
-        "start": "node aspen"
+        "start": "node app"
     },
     "repository": {
         "type": "git",
