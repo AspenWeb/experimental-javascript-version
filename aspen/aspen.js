@@ -30,11 +30,11 @@ exports.render = function(simplate, context) {
                 pages.unshift('');
             }
 
-            var ctx = vm.createContext({console:console,require:require});
+            var ctx = vm.createContext({console:console,require:require,response:res});
             var top = vm.createScript(pages[0]);
             // Run page 0 if we haven't yet.    
             if (!(pages[0] in cache)) {
-                cache[pages[0]] = null;
+                cache[pages[0]] = ctx;
                 top.runInContext(ctx);
             }
 
@@ -42,12 +42,10 @@ exports.render = function(simplate, context) {
                 // Run page 1.
                 //eval(pages[1]);
                 var middle = vm.createScript(pages[1]);
+                middle.runInContext(cache[pages[0]]);
 
-                middle.runInContext(ctx);
-                
-                var out = pages[2];
                 if (content_type.indexOf('text/') === 0) {
-                    var out = mustache.render(out, ctx);
+                    var out = mustache.render(pages[2], cache[pages[0]]);
                 }
 
                 res.setHeader('Content-Type', content_type);
