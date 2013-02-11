@@ -1,16 +1,39 @@
-var url = require('url'),
-	fs  = require('fs');
+var async = require('async'),
+    fs  = require('fs'),
+    path = require('path');
 
 ^L
 asyncMode = true;
-wwwPath = request.fsPath.replace(aspen.wwwPath, "");
+wwwPath = request.fsPath.replace(aspen.wwwPath, "").replace("\\", "/");
 fs.readdir(request.fsPath, function(err, readFiles) {
-    files = readFiles;
-    asyncCallback({files: files, wwwPath: wwwPath});
+    function wrapAllFiles(files) {
+        var returnArray = [];
+
+        for(file in files) {
+            if(files.hasOwnProperty(file)) {
+                returnArray.push(request.fsPath + path.sep + files[file]);
+            }
+        }
+
+        return returnArray;
+    }
+
+    async.map(wrapAllFiles(readFiles), fs.stat, function(err, result) {
+        var templateFiles = [];
+
+        for(file in readFiles) {
+            if(readFiles.hasOwnProperty(file)) {
+                templateFiles.push({name: readFiles[file], wwwPath: wwwPath, stats: result[file]});
+            }
+        }
+
+        asyncCallback({files: templateFiles, simplate: "Directory Listing: " + wwwPath, aspen: aspen});
+    });
 });
 ^L
 <html>
     <head>
+        <meta http-equiv="Content-Type" content="text/html; charset=utf-8">
         <title>{{ simplate }}</title>
         <style>
             body {font-family: "Trebuchet MS", sans-serif;}
@@ -29,7 +52,7 @@ fs.readdir(request.fsPath, function(err, readFiles) {
         <table>
             <tr>
                 <th class="name">Name</th>
-                <th>Size</th>
+                <th style="width: 150px;">Size</th>
                 <th>Last Modified</th>
             </tr>
 
@@ -42,7 +65,7 @@ fs.readdir(request.fsPath, function(err, readFiles) {
             <!-- Foreach -->
             {{#files}}
             <tr>
-            <td><a href="{{wwwPath}}/{{.}}">{{.}}</a></td>
+            <td><a href="{{wwwPath}}/{{name}}">{{name}}</a></td><td>{{stats.size}}</td><td>{{stats.mtime}}</td>
             </tr>
             {{/files}}
 

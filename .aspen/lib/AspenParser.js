@@ -61,6 +61,7 @@ var page0Ctx = new ContextFactory();
 var fileCache = {};
 
 var aspen = config;
+aspen.package = require("../../package.json");
 aspen.wwwPath = path.resolve(config.www_root + path.sep);
 
 /**
