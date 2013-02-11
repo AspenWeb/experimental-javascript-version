@@ -2,10 +2,12 @@ var url = require('url'),
 	fs  = require('fs');
 
 ^L
-
-files = fs.readdirSync(request.fsPath),
+asyncMode = true;
 wwwPath = request.fsPath.replace(aspen.wwwPath, "");
-
+fs.readdir(request.fsPath, function(err, readFiles) {
+    files = readFiles;
+    asyncCallback({files: files, wwwPath: wwwPath});
+});
 ^L
 <html>
     <head>
