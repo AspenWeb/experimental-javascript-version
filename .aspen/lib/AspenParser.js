@@ -17,6 +17,12 @@ var ContextFactory = require('./ContextFactory');
 var logger = require('./logger/index');
 
 /**
+ * @requires config.json The global config for Aspen
+ * @type {Object}
+ */
+var config = require('../config.json');
+
+/**
  * @requires module:mime Mime tells you the type of a file
  */
 var mime = require('mime');
@@ -37,6 +43,12 @@ var vm = require('vm');
 var fs = require('fs');
 
 /**
+ * @requires module:path The NodeJS PATH Module for handling PATHs
+ * @type {Object}
+ */
+var path = require('path');
+
+/**
  * This holds the page 0 ContextFactory
  * @type {Object}
  */
@@ -47,6 +59,9 @@ var page0Ctx = new ContextFactory();
  * @type {Object}
  */
 var fileCache = {};
+
+var aspen = config;
+aspen.wwwPath = path.resolve(config.www_root + path.sep);
 
 /**
  * Creates a new AspenParser
@@ -85,7 +100,7 @@ AspenParser.prototype.parse = function (req, res, file) {
                 if (page0Ctx.checkForCtx(file) === true) {
                     ctx = page0Ctx.getCtx(file);
                 } else {
-                    ctx = page0Ctx.createCtx(file, {require: require, console: console, logger: logger});
+                    ctx = page0Ctx.createCtx(file, {require: require, console: console, logger: logger, aspen: aspen});
                 }
 
                 /* Append the Request and the Response Object to the current Context */
@@ -111,6 +126,11 @@ AspenParser.prototype.parse = function (req, res, file) {
                 } else {
                     res.setHeader("Content-Type", fileCache[file].mime);
                     res.statusCode = 200;
+
+                    if (typeof ctx.response.body !== "string") {
+                        ctx.response.body = JSON.stringify(ctx.response.body);
+                    }
+
                     res.end(ctx.response.body);
                 }
             } else {
@@ -123,7 +143,7 @@ AspenParser.prototype.parse = function (req, res, file) {
                         pages = content.toString().split("^L");
 
                         /* Get page 0 and create a new context */
-                        ctx = page0Ctx.createCtx(file, {require: require, console: console, logger: logger});
+                        ctx = page0Ctx.createCtx(file, {require: require, console: console, logger: logger, aspen: aspen});
 
                         if (pages[0].trim() !== "") {
                             try {
@@ -186,6 +206,11 @@ AspenParser.prototype.parse = function (req, res, file) {
                         } else {
                             res.setHeader("Content-Type", fileCache[file].mime);
                             res.statusCode = 200;
+
+                            if (typeof ctx.response.body !== "string") {
+                                ctx.response.body = JSON.stringify(ctx.response.body);
+                            }
+
                             res.end(ctx.response.body);
                         }
                     }
@@ -223,6 +248,8 @@ AspenParser.prototype.checkIfValidSimplate = function (file, completeCB) {
             readStream.destroy();
             completeCB(true);
         }
+
+        lastChunk = data.toString();
 
         readStream.resume();
     });
