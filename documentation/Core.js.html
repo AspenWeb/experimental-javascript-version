@@ -1,0 +1,191 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="utf-8">
+    <title>JSDoc: Source: Core.js</title>
+    
+    <script src="scripts/prettify/prettify.js"> </script>
+    <script src="scripts/prettify/lang-css.js"> </script>
+    <!--[if lt IE 9]>
+      <script src="//html5shiv.googlecode.com/svn/trunk/html5.js"></script>
+    <![endif]-->
+    <link type="text/css" rel="stylesheet" href="styles/prettify-tomorrow.css">
+    <link type="text/css" rel="stylesheet" href="styles/jsdoc-default.css">
+</head>
+
+<body>
+
+<div id="main">
+    
+    <h1 class="page-title">Source: Core.js</h1>
+    
+    
+
+
+    
+    <section>
+        <article>
+            <pre class="prettyprint source"><code>/**
+ * @file The Core of Aspen
+ * @author Fabian Faßbender
+ * @version 1
+ * @module Core
+ */
+
+/**
+ * @requires lib/logger/index Logger
+ */
+var Logger = require('./lib/logger/index');
+
+/**
+ * @requires lib/Utils Various Utils
+ */
+var Utils = require('./lib/Utils');
+
+/**
+ * @requires lib/SimplateManager To handle all System Templates
+ */
+var SimplateManagerReq = require('./lib/SimplateManager');
+
+/**
+ * @requires lib/AspenParser To parse the Simplates
+ */
+var AspenParserReq = require('./lib/AspenParser');
+
+/**
+ * @requires lib/logger/index The Logger from Aspen
+ * @type {Object}
+ */
+var logger = require('./lib/logger/index');
+
+/**
+ * @requires module:mime Mime tells you the type of a file
+ */
+var mime = require('mime');
+
+/**
+ * @requires module:http The NodeJS HTTP Module to handle HTTP Requests
+ */
+var http = require('http');
+
+/**
+ * @requires module:url The NodeJS URL Module for parsing URLs
+ */
+var url = require('url');
+
+/**
+ * @requires module:path The NodeJS PATH Module for handling PATHs
+ */
+var path = require('path');
+
+/**
+ * @requires module:fs The NodeJS FS Module for FS i/o
+ */
+var fs = require('fs');
+
+/* Setup the SimplateManager and the AspenParser */
+var AspenParser = new AspenParserReq();
+var SimplateManager = new SimplateManagerReq();
+
+AspenParser.appendSimplateManager(SimplateManager);
+SimplateManager.appendAspenParser(AspenParser);
+
+/**
+ * Creates a new Aspen Core
+ * @constructor
+ */
+function Core(listeningCB) {
+    "use strict";
+
+    Logger.info("Starting Aspen.JS Framework...");
+
+    /* Check if a listening callback has been given */
+    if (typeof listeningCB !== "function") {
+        listeningCB = function () {};
+    }
+
+    /**
+     * @property {Object} this.config Holds the current Config
+     */
+    this.config = require('./config.json');
+
+    /**
+     * @property {Object} this._httpServer Holds the HTTP Server where the Requests come in
+     */
+    this._httpServer = http.createServer(this._handleRequest.bind(this)).listen(this.config.network.port, this.config.network.ip, listeningCB);
+
+    /**
+     * @property {String} this._cwd Holds the current Workdir
+     */
+    this._cwd = process.cwd();
+}
+
+/**
+ * Callback for processing a incoming HTTP Request
+ * @param {Object} req The request that comes in
+ * @param {Object} res The esponse that is send to the Client
+ */
+Core.prototype._handleRequest = function (req, res) {
+    "use strict";
+
+    res.started = (new Date()).getTime();
+    var resEnd = res.end;
+    res.end = function () {
+        respAvg.push((new Date()).getTime() - res.started);
+        resEnd.apply(res, arguments);
+    };
+
+    reqs += 1;
+
+    /* Check if Request Path is in valid cwd */
+    var fs_path = path.resolve(this.config.www_root + path.sep + url.parse(req.url).pathname.slice(1, req.url.length)),
+        self = this;
+
+    if (fs_path.indexOf(this._cwd) !== 0) {
+        /* It is outside the bounds */
+        SimplateManager.error(req, res, 400);
+    } else {
+        req.fsPath = fs_path;
+
+        fs.stat(fs_path, function (err, stat) {
+            if (err) {
+                logger.info("Could not find Ressource: " + fs_path);
+                SimplateManager.resolveWWW(req, res, fs_path);
+            } else {
+                if (stat.isFile()) {
+                    if (self.config.simplateTypes.indexOf(path.extname(fs_path)) !== -1) {
+                        AspenParser.parse(req, res, fs_path);
+                    } else {
+                        res.statusCode = 200;
+                        fs.createReadStream(fs_path).pipe(res);
+                    }
+                } else {
+                    SimplateManager.autoIndex(req, res, fs_path);
+                }
+            }
+        });
+    }
+};
+
+module.exports = Core;</code></pre>
+        </article>
+    </section>
+
+
+
+
+</div>
+
+<nav>
+    <h2><a href="index.html">Index</a></h2><h3>Modules</h3><ul><li><a href="module-Core.html">Core</a></li><li><a href="903dcbb0c9.html">lib/AspenParser</a></li><li><a href="babcbbfb6a.html">lib/ContextFactory</a></li><li><a href="2017b20e75.html">lib/logger/index</a></li><li><a href="90bf3262d6.html">lib/SimplateManager</a></li><li><a href="83a0aa008e.html">lib/Utils</a></li></ul><h3>Classes</h3><ul><li><a href="7eb7f2c671.html">Core</a></li><li><a href="3cbc2a3963.html">AspenParser</a></li><li><a href="58771172db.html">ContextFactory</a></li><li><a href="ae26bda84e.html">Logger</a></li><li><a href="e75dd12d36.html">SimplateManager</a></li></ul>
+</nav>
+
+<br clear="both">
+
+<footer>
+    Documentation generated by <a href="https://github.com/jsdoc3/jsdoc">JSDoc 3.2.0-dev</a> on Mon Feb 11 2013 12:29:48 GMT+0100 (MEZ)
+</footer>
+
+<script> prettyPrint(); </script>
+</body>
+</html>
