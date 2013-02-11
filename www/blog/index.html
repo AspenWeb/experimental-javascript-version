@@ -1,0 +1,27 @@
+request = require('request');
+
+^L
+
+github = {issues:null};
+request('https://api.github.com/repos/zetaweb/aspen/issues?client_id=f58e3c865648d1eae132&client_secret=b1e49a627a30e3d41568ecaf976436f4bfbbefba', function (error, response, body) {
+	if (!error && response.statusCode == 200) {
+		github.issues = body;
+	}
+	
+test = {hello:'world'};
+	console.log('Got a response');
+});
+
+^L
+<!doctype html>
+<html>
+	<head>
+		
+	</head>
+	<body>
+		{{#github.issues}}
+			<h2>{{title}}</h2>
+		{{/github.issues}}
+		{{test.hello}}
+	</body>
+</html>

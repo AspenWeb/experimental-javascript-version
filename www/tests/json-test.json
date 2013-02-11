@@ -1,0 +1,3 @@
+
+^L
+response.body = { rand: Math.random() };
