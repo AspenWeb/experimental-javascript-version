@@ -1,17 +1,29 @@
 {
-    "debug": true,
+    "network": {
+        "port": 1234,
+        "ip": "0.0.0.0"
+    },
 
-    "charset": "UTF-8",
+    "www_root": "./www",
+    "simplate_root": "./.aspen/simplates",
+
+    "simplateTypes": [".json", ".html"],
+
+    "logger": {
+        "availableLevels": ["debug", "info", "warn", "error"],
+        "enabledLevels": ["debug", "info", "warn", "error"],
+
+        "format": "[%date%][{length=10}%timeRun%][{length=5}%level%] {length=160}%message% Heap: {length=8, suffix=kB, round=2}%heapUsed% / {length=8, suffix=mB, round=4}%heapAlloc% - RSS: {length=8, suffix=mB, round=4}%rss%",
+
+        "writer": [
+            "console"
+        ]
+    },
+
     "indices": [
         "index.html",
         "README"
     ],
-    "list_directories": true,
-    "logging_threshold": 1,
-    "media_type_default": "text/plain",
-    "network_address": "127.0.0.1",
-    "network_port": 8080,
-    "www_root": "www",
-    "aspen_root": "aspen",
-    "unavailable": false
+
+    "list_directories": true
 }

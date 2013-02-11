@@ -14,7 +14,8 @@
     },
     "dependencies": {
         "mustache": "*",
-        "mime": "*"
+        "mime": "*",
+        "async": "*"
     },
     "license": "MIT"
 }
