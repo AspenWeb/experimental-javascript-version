@@ -120,6 +120,25 @@ AspenParser.prototype._executePages = function (req, res, pages) {
     ctx.response = res;
     ctx.asyncMode = false;
 
+    /* Create a callback for the async mode */
+    ctx.asyncCallback = function (templateVars) {
+        if (pages.mime.indexOf('text/') === 0) {
+            var out = mustache.render(pages["2"], templateVars);
+            res.setHeader("Content-Type", pages.mime);
+            res.statusCode = 200;
+            res.end(out);
+        } else {
+            res.setHeader("Content-Type", pages.mime);
+            res.statusCode = 200;
+
+            if (typeof templateVars.response.body !== "string") {
+                templateVars.response.body = JSON.stringify(templateVars.response.body);
+            }
+
+            res.end(templateVars.response.body);
+        }
+    };
+
     /* Get the Page 1 and execute it */
     try {
         pages["1"].runInContext(ctx);
@@ -131,20 +150,23 @@ AspenParser.prototype._executePages = function (req, res, pages) {
         return;
     }
 
-    if (pages.mime.indexOf('text/') === 0) {
-        var out = mustache.render(pages["2"], ctx);
-        res.setHeader("Content-Type", pages.mime);
-        res.statusCode = 200;
-        res.end(out);
-    } else {
-        res.setHeader("Content-Type", pages.mime);
-        res.statusCode = 200;
+    /* Check if the Simplate uses async */
+    if (ctx.asyncMode === false) {
+        if (pages.mime.indexOf('text/') === 0) {
+            var out = mustache.render(pages["2"], ctx);
+            res.setHeader("Content-Type", pages.mime);
+            res.statusCode = 200;
+            res.end(out);
+        } else {
+            res.setHeader("Content-Type", pages.mime);
+            res.statusCode = 200;
 
-        if (typeof ctx.response.body !== "string") {
-            ctx.response.body = JSON.stringify(ctx.response.body);
+            if (typeof ctx.response.body !== "string") {
+                ctx.response.body = JSON.stringify(ctx.response.body);
+            }
+
+            res.end(ctx.response.body);
         }
-
-        res.end(ctx.response.body);
     }
 };
 
