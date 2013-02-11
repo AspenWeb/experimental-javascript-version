@@ -4,6 +4,10 @@
     "author": "Chad Whitacre <chad@zetaweb.com>",
     "description": "A NodeJS web framework that makes the most of the filesystem.",
     "contributors": [
+        {
+            "name": "Fabian Faßbender",
+            "email": "fabian.fassbender42@googlemail.com"
+        }
     ],
     "scripts": {
         "start": "node app"
