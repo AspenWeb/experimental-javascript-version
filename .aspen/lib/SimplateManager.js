@@ -159,7 +159,7 @@ SimplateManager.prototype.resolveAutoIndexSimplate = function (searchPath, done)
         currentIndex += 1;
 
         if (typeof config.indices[currentIndex] !== "undefined") {
-            checkForAutoIndex(searchPath + config.indices[currentIndex], nextIteration);
+            checkForAutoIndex(searchPath + path.sep + config.indices[currentIndex], nextIteration);
         } else {
             logger.warn("No Simplate File found for AutoIndex: " + searchPath);
             done(false);
