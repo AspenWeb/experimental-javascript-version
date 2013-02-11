@@ -3,7 +3,8 @@ var url = require('url'),
 
 ^L
 
-files = fs.readdirSync(request.fsPath);
+files = fs.readdirSync(request.fsPath),
+wwwPath = request.fsPath.replace(aspen.wwwPath, "");
 
 ^L
 <html>
@@ -39,7 +40,7 @@ files = fs.readdirSync(request.fsPath);
             <!-- Foreach -->
             {{#files}}
             <tr>
-            <td><a href="{{.}}">{{.}}</a></td>
+            <td><a href="{{wwwPath}}/{{.}}">{{.}}</a></td>
             </tr>
             {{/files}}
 
