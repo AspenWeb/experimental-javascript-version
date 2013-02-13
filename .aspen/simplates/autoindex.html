@@ -3,8 +3,9 @@ var async = require('async'),
     path = require('path');
 
 ^L
-asyncMode = true;
+files = [];
 wwwPath = request.fsPath.replace(aspen.wwwPath, "").replace("\\", "/");
+
 fs.readdir(request.fsPath, function(err, readFiles) {
     function wrapAllFiles(files) {
         var returnArray = [];
@@ -19,15 +20,13 @@ fs.readdir(request.fsPath, function(err, readFiles) {
     }
 
     async.map(wrapAllFiles(readFiles), fs.stat, function(err, result) {
-        var templateFiles = [];
-
         for(file in readFiles) {
             if(readFiles.hasOwnProperty(file)) {
-                templateFiles.push({name: readFiles[file], wwwPath: wwwPath, stats: result[file]});
+                files.push({name: readFiles[file], wwwPath: wwwPath, stats: result[file]});
             }
         }
 
-        asyncCallback({files: templateFiles, simplate: "Directory Listing: " + wwwPath, aspen: aspen});
+        finished();
     });
 });
 ^L
