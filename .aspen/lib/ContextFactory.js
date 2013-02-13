@@ -6,9 +6,9 @@
  */
 
 /**
- * @requires module:vm NodeJS VM Module to create Contexts
+ * @requires module:contextify Contextify is used to create Contexts and run scripts in it
  */
-var vm = require('vm');
+var contextify = require('contextify');
 
 
 /**
@@ -48,7 +48,7 @@ ContextFactory.prototype.checkForCtx = function (file) {
 ContextFactory.prototype.createCtx = function (file, context) {
     "use strict";
 
-    var newCtx = vm.createContext(context);
+    var newCtx = contextify(context);
     this._ctx[file] = context;
     return newCtx;
 };
@@ -62,7 +62,7 @@ ContextFactory.prototype.getCtx = function (file) {
     "use strict";
 
     if (typeof this._ctx[file] !== "undefined") {
-        return vm.createContext(this._ctx[file]);
+        return this._ctx[file];
     } else {
         return false;
     }

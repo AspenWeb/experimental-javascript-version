@@ -23,7 +23,8 @@
     "dependencies": {
         "mustache": "*",
         "mime": "*",
-        "async": "*"
+        "async": "*",
+        "contextify": "*"
     },
     "license": "MIT"
 }
