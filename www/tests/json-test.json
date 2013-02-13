@@ -1,3 +1,4 @@
-finished();
+
 ^L
 response.body = { rand: Math.random() };
+finished();

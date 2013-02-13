@@ -124,11 +124,11 @@ AspenParser.prototype._executePages = function (req, res, pages) {
             res.setHeader("Content-Type", pages.mime);
             res.statusCode = 200;
 
-            if (typeof templateVars.response.body !== "string") {
-                templateVars.response.body = JSON.stringify(templateVars.response.body);
+            if (typeof ctx.response.body !== "string") {
+                ctx.response.body = JSON.stringify(ctx.response.body);
             }
 
-            res.end(templateVars.response.body);
+            res.end(ctx.response.body);
         }
     };
 
