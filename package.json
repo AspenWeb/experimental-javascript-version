@@ -1,6 +1,6 @@
 {
     "name": "aspen",
-    "version": "0.0.1",
+    "version": "1.1.0",
     "author": "Chad Whitacre <chad@zetaweb.com>",
     "description": "A NodeJS web framework that makes the most of the filesystem.",
     "contributors": [
@@ -14,7 +14,7 @@
         }
     ],
     "scripts": {
-        "start": "node app"
+        "start": "node start.js"
     },
     "repository": {
         "type": "git",

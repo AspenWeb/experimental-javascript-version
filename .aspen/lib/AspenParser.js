@@ -61,6 +61,7 @@ var page0Ctx = new ContextFactory();
 var fileCache = {};
 
 var aspen = config;
+aspen.package = require("../../package.json");
 aspen.wwwPath = path.resolve(config.www_root + path.sep);
 
 /**
@@ -78,6 +79,99 @@ function AspenParser() {
 }
 
 /**
+ * Executes all Pages in a Simplate
+ * @param {Object} req Request where the headers and stuff is in
+ * @param {Object} res Response where the executed page goes into
+ * @param {Object} pages The fileCache Object that holds the data for the file
+ * @private
+ */
+AspenParser.prototype._executePages = function (req, res, pages) {
+    "use strict";
+
+    var ctx,
+        self = this;
+
+    /* Change the timeout for this cache */
+    pages.timeout = (new Date()).getTime();
+
+    /* Check if Context is available */
+    if (page0Ctx.checkForCtx(pages.file) === true) {
+        ctx = page0Ctx.getCtx(pages.file);
+    } else {
+        /* A new Context must be created */
+        ctx = page0Ctx.createCtx(pages.file, {require: require, console: console, logger: logger, aspen: aspen});
+
+        /* Execute page 0 in it if given */
+        if (pages[0].trim() !== "") {
+            try {
+                pages[0] = vm.createScript(pages[0], pages.file + ":p0");
+                pages[0].runInContext(ctx);
+                page0Ctx.createCtx(pages.file, ctx);
+            } catch (e) {
+                logger.warn("Error in executing Init in File " + pages.file + ": " + e.message);
+                logger.debug(e.stack);
+                self.SimplateManager.error(req, res, 500);
+                return;
+            }
+        }
+    }
+
+    /* Append the Request and the Response Object to the current Context */
+    ctx.request = req;
+    ctx.response = res;
+    ctx.asyncMode = false;
+
+    /* Create a callback for the async mode */
+    ctx.asyncCallback = function (templateVars) {
+        if (pages.mime.indexOf('text/') === 0) {
+            var out = mustache.render(pages["2"], templateVars);
+            res.setHeader("Content-Type", pages.mime);
+            res.statusCode = 200;
+            res.end(out);
+        } else {
+            res.setHeader("Content-Type", pages.mime);
+            res.statusCode = 200;
+
+            if (typeof templateVars.response.body !== "string") {
+                templateVars.response.body = JSON.stringify(templateVars.response.body);
+            }
+
+            res.end(templateVars.response.body);
+        }
+    };
+
+    /* Get the Page 1 and execute it */
+    try {
+        pages["1"].runInContext(ctx);
+        page0Ctx.createCtx(pages.file, ctx);
+    } catch (e) {
+        logger.warn("Executing Simplate Error in File " + pages.file + ": " + e.message);
+        logger.debug(e.stack);
+        self.SimplateManager.error(req, res, 500);
+        return;
+    }
+
+    /* Check if the Simplate uses async */
+    if (ctx.asyncMode === false) {
+        if (pages.mime.indexOf('text/') === 0) {
+            var out = mustache.render(pages["2"], ctx);
+            res.setHeader("Content-Type", pages.mime);
+            res.statusCode = 200;
+            res.end(out);
+        } else {
+            res.setHeader("Content-Type", pages.mime);
+            res.statusCode = 200;
+
+            if (typeof ctx.response.body !== "string") {
+                ctx.response.body = JSON.stringify(ctx.response.body);
+            }
+
+            res.end(ctx.response.body);
+        }
+    }
+};
+
+/**
  * Parses a Simplate and write the result into the Response
  * @param {Object} res Response where the parsed Values are written to
  * @param {String} file File that should be parsed
@@ -93,46 +187,7 @@ AspenParser.prototype.parse = function (req, res, file) {
     this.checkIfValidSimplate(file, function (valid) {
         if (valid) {
             if (typeof fileCache[file] !== "undefined") {
-                /* Change the timeout for this cache */
-                fileCache[file].timeout = (new Date()).getTime();
-
-                /* Check if Context is available */
-                if (page0Ctx.checkForCtx(file) === true) {
-                    ctx = page0Ctx.getCtx(file);
-                } else {
-                    ctx = page0Ctx.createCtx(file, {require: require, console: console, logger: logger, aspen: aspen});
-                }
-
-                /* Append the Request and the Response Object to the current Context */
-                ctx.request = req;
-                ctx.response = res;
-
-                /* Get the Page 1 and execute it */
-                try {
-                    fileCache[file]["1"].runInContext(ctx);
-                    page0Ctx.createCtx(file, ctx);
-                } catch (e) {
-                    logger.warn("Executing Simplate Error in File " + file + ": " + e.message);
-                    logger.debug(e.stack);
-                    self.SimplateManager.error(req, res, 500);
-                    return;
-                }
-
-                if (fileCache[file].mime.indexOf('text/') === 0) {
-                    var out = mustache.render(fileCache[file]["2"], ctx);
-                    res.setHeader("Content-Type", fileCache[file].mime);
-                    res.statusCode = 200;
-                    res.end(out);
-                } else {
-                    res.setHeader("Content-Type", fileCache[file].mime);
-                    res.statusCode = 200;
-
-                    if (typeof ctx.response.body !== "string") {
-                        ctx.response.body = JSON.stringify(ctx.response.body);
-                    }
-
-                    res.end(ctx.response.body);
-                }
+                self._executePages(req, res, fileCache[file]);
             } else {
                 fs.readFile(file, function (err, content) {
                     if (err) {
@@ -142,23 +197,8 @@ AspenParser.prototype.parse = function (req, res, file) {
                         /* Split the file into its pages */
                         pages = content.toString().split("^L");
 
-                        /* Get page 0 and create a new context */
-                        ctx = page0Ctx.createCtx(file, {require: require, console: console, logger: logger, aspen: aspen});
-
-                        if (pages[0].trim() !== "") {
-                            try {
-                                pages[0] = vm.createScript(pages[0], file + ":p0");
-                                pages[0].runInContext(ctx);
-                                page0Ctx.createCtx(file, ctx);
-                            } catch (e) {
-                                logger.warn("Error in executing Init in File " + file + ": " + e.message);
-                                logger.debug(e.stack);
-                                self.SimplateManager.error(req, res, 500);
-                                return;
-                            }
-                        }
-
-                        fileCache[file] = {};
+                        /* Create a new Object for this file */
+                        fileCache[file] = {file: file};
 
                         /* Store pages */
                         fileCache[file]["0"] = (typeof pages[0] !== undefined) ? pages[0] : "";
@@ -180,39 +220,7 @@ AspenParser.prototype.parse = function (req, res, file) {
                         /* Get the mime type for this file */
                         fileCache[file].mime = mime.lookup(file);
 
-                        /* Change the timeout for this cache */
-                        fileCache[file].timeout = (new Date()).getTime();
-
-                        /* Append the Request and the Response Object to the current Context */
-                        ctx.request = req;
-                        ctx.response = res;
-
-                        /* Execute Page 1 */
-                        try {
-                            fileCache[file]["1"].runInContext(ctx);
-                            page0Ctx.createCtx(file, ctx);
-                        } catch (e) {
-                            logger.warn("Executing Simplate Error in File " + file + ": " + e.message);
-                            logger.debug(e.stack);
-                            self.SimplateManager.error(req, res, 500);
-                            return;
-                        }
-
-                        if (fileCache[file].mime.indexOf('text/') === 0) {
-                            var out = mustache.render(fileCache[file]["2"], ctx);
-                            res.setHeader("Content-Type", fileCache[file].mime);
-                            res.statusCode = 200;
-                            res.end(out);
-                        } else {
-                            res.setHeader("Content-Type", fileCache[file].mime);
-                            res.statusCode = 200;
-
-                            if (typeof ctx.response.body !== "string") {
-                                ctx.response.body = JSON.stringify(ctx.response.body);
-                            }
-
-                            res.end(ctx.response.body);
-                        }
+                        self._executePages(req, res, fileCache[file]);
                     }
                 });
             }
