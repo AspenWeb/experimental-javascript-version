@@ -33,11 +33,6 @@ var mime = require('mime');
 var mustache = require('mustache');
 
 /**
- * @requires module:vm NodeJS VM Module to create Scripts
- */
-var vm = require('vm');
-
-/**
  * @requires module:fs The NodeJS FS Module for FS i/o
  */
 var fs = require('fs');
@@ -104,9 +99,7 @@ AspenParser.prototype._executePages = function (req, res, pages) {
         /* Execute page 0 in it if given */
         if (pages[0].trim() !== "") {
             try {
-                pages[0] = vm.createScript(pages[0], pages.file + ":p0");
-                pages[0].runInContext(ctx);
-                page0Ctx.createCtx(pages.file, ctx);
+                ctx.run(pages[0]);
             } catch (e) {
                 logger.warn("Error in executing Init in File " + pages.file + ": " + e.message);
                 logger.debug(e.stack);
@@ -119,12 +112,11 @@ AspenParser.prototype._executePages = function (req, res, pages) {
     /* Append the Request and the Response Object to the current Context */
     ctx.request = req;
     ctx.response = res;
-    ctx.asyncMode = false;
 
     /* Create a callback for the async mode */
-    ctx.asyncCallback = function (templateVars) {
+    ctx.finished = function () {
         if (pages.mime.indexOf('text/') === 0) {
-            var out = mustache.render(pages["2"], templateVars);
+            var out = mustache.render(pages["2"], ctx);
             res.setHeader("Content-Type", pages.mime);
             res.statusCode = 200;
             res.end(out);
@@ -142,32 +134,12 @@ AspenParser.prototype._executePages = function (req, res, pages) {
 
     /* Get the Page 1 and execute it */
     try {
-        pages["1"].runInContext(ctx);
-        page0Ctx.createCtx(pages.file, ctx);
+        ctx.run(pages["1"]);
     } catch (e) {
         logger.warn("Executing Simplate Error in File " + pages.file + ": " + e.message);
         logger.debug(e.stack);
         self.SimplateManager.error(req, res, 500);
         return;
-    }
-
-    /* Check if the Simplate uses async */
-    if (ctx.asyncMode === false) {
-        if (pages.mime.indexOf('text/') === 0) {
-            var out = mustache.render(pages["2"], ctx);
-            res.setHeader("Content-Type", pages.mime);
-            res.statusCode = 200;
-            res.end(out);
-        } else {
-            res.setHeader("Content-Type", pages.mime);
-            res.statusCode = 200;
-
-            if (typeof ctx.response.body !== "string") {
-                ctx.response.body = JSON.stringify(ctx.response.body);
-            }
-
-            res.end(ctx.response.body);
-        }
     }
 };
 
@@ -180,9 +152,7 @@ AspenParser.prototype.parse = function (req, res, file) {
     "use strict";
 
     var self = this,
-        ctx,
-        pages,
-        pageIndex;
+        pages;
 
     this.checkIfValidSimplate(file, function (valid) {
         if (valid) {
@@ -202,16 +172,7 @@ AspenParser.prototype.parse = function (req, res, file) {
 
                         /* Store pages */
                         fileCache[file]["0"] = (typeof pages[0] !== undefined) ? pages[0] : "";
-
-                        /* Try parsing page 1 */
-                        try {
-                            fileCache[file]["1"] = vm.createScript(pages[1], file + ":p1");
-                        } catch (e) {
-                            logger.warn("Parsing Simplate Error in File " + file + ": " + e.message);
-                            logger.debug(e.stack);
-                            self.SimplateManager.error(req, res, 500);
-                            return;
-                        }
+                        fileCache[file]["1"] = pages[1];
 
                         if (pages.length > 2) {
                             fileCache[file]["2"] = pages[2];
